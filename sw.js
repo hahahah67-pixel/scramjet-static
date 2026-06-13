@@ -1,10 +1,12 @@
 // Scramjet STATIC — Service Worker
-// Engine: Scramjet (MercuryWorkshop)
+// Engine: Scramjet v1.1.0 (MercuryWorkshop official release)
 // Transport: libcurl over wss://anura.pro/wisp/
 
+// scramjet.js (scramjet.bundle.js) sets globalThis.$scramjetLoadWorker
 importScripts('./scramjet-engine/scramjet.js')
 
-const { _5vlbtx: ScramjetServiceWorker } = _zx1lz2()
+// Official API: $scramjetLoadWorker() returns { ScramjetServiceWorker }
+const { ScramjetServiceWorker } = $scramjetLoadWorker()
 const proxySw = new ScramjetServiceWorker()
 
 self.addEventListener('install', () => {
@@ -16,7 +18,7 @@ self.addEventListener('activate', (event) => {
 })
 
 async function handleRequest(event) {
-  // loadConfig must be called before routing — syncs config from the controller
+  // loadConfig syncs the ScramjetController config (prefix, files etc) into the SW
   await proxySw.loadConfig()
 
   if (!proxySw.route(event)) {
