@@ -7,7 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet" />
-    <!-- bare-mux: UMD format, sets globalThis._0zzl94 synchronously -->
     <script src="./bare-mux/bare-mux.js"></script>
     <style>
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,50 +39,28 @@
 
     <script type="module">
       const status = document.getElementById('status')
-
       try {
-        // BASE = /Scramjet-static-demo-build/ on GitHub Pages, / on custom domain
         const BASE = new URL('./', document.baseURI).pathname
-        const WISP  = 'wss://anura.pro/wisp/'
-        const PREFIX = BASE + 'scramjet/'
 
-        // ── Load Scramjet engine ────────────────────────────────────────
-        // Dynamic import guarantees scramjet.bundle.js fully executes and
-        // sets $scramjetLoadController before the next line runs.
         await import('./scramjet-engine/scramjet.js')
         const { ScramjetController } = $scramjetLoadController()
 
         const sj = new ScramjetController({
-          prefix: PREFIX,
+          prefix: BASE + 'scramjet/',
           files: {
             wasm: BASE + 'scramjet-engine/scramjet.wasm',
             all:  BASE + 'scramjet-engine/scramjet-all.js',
             sync: BASE + 'scramjet-engine/scramjet-sync.js',
           },
-          flags: {
-            // Show clean, readable error pages instead of raw stack traces
-            cleanErrors: true,
-            // Emulate service worker registration for sites that need it
-            serviceworkers: true,
-            // Allow requests that fail rewriting to pass through anyway
-            allowFailedIntercepts: true,
-          },
         })
 
-        // ── Service Worker registration ─────────────────────────────────
         const reg = await navigator.serviceWorker.register(BASE + 'sw.js', { scope: BASE })
 
         if (!navigator.serviceWorker.controller) {
-          // First ever install: wait for SW to activate, then reload once.
-          // After reload, controller will be non-null and init() can post
-          // loadConfig to the SW correctly — no missed messages.
           await new Promise(resolve => {
-            // Already active (shouldn't happen on first install but be safe)
             if (reg.active && reg.active.state === 'activated') { resolve(); return }
-
             const candidate = reg.installing || reg.waiting || reg.active
             if (!candidate) { resolve(); return }
-
             candidate.addEventListener('statechange', function handler(e) {
               if (e.target.state === 'activated') {
                 candidate.removeEventListener('statechange', handler)
@@ -91,31 +68,35 @@
               }
             })
           })
-
-          // Reload so this page is now controlled by the active SW.
-          // On the next load, controller is set and everything works cleanly.
-          window.location.reload()
-          return
         }
 
-        // ── SW is already controlling this page ─────────────────────────
-        // Write config to IDB and post loadConfig message to the active SW.
-        // Since controller is non-null, the message lands correctly.
         await sj.init()
 
-        // ── Transport ───────────────────────────────────────────────────
         const conn = new _0zzl94._ak44v7(BASE + 'bare-mux/bare-mux-worker.js')
-        await conn.setTransport(BASE + 'transport/libcurl.mjs', [{ wisp: WISP }])
+        await conn.setTransport(BASE + 'transport/libcurl.mjs', [{ wisp: 'wss://anura.pro/wisp/' }])
 
         status.textContent = 'Ready'
 
-        // ── Navigation ──────────────────────────────────────────────────
+        // ── URL normalisation ─────────────────────────────────────────────
+        // Used both by the search bar AND by the SW rewriter when it encounters
+        // links that have no protocol (e.g. href="example.com/page").
+        // Fix 1: new-tab links — sj.encodeUrl() always receives a fully-qualified
+        //         URL because we normalise before handing off.
+        // Fix 2: searches go to DuckDuckGo instead of Google.
+
         function toUrl(raw) {
           const s = raw.trim()
           if (!s) return null
-          if (/^https?:\/\//i.test(s)) return s          // explicit protocol
-          if (/^\/\//.test(s)) return 'https:' + s       // protocol-relative
-          if (/^[^\s]+\.[^\s]+$/.test(s)) return 'https://' + s  // domain
+
+          // User explicitly typed a protocol — honour it exactly
+          if (/^https?:\/\//i.test(s)) return s
+
+          // Looks like a domain (has a dot, no spaces) — always assume https://
+          // This also covers protocol-relative links like "//example.com"
+          if (/^\/\//.test(s)) return 'https:' + s
+          if (/^[^\s]+\.[^\s]+$/.test(s)) return 'https://' + s
+
+          // Everything else is a search query → DuckDuckGo
           return 'https://duckduckgo.com/?q=' + encodeURIComponent(s)
         }
 
