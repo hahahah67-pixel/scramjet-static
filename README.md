@@ -1,15 +1,32 @@
-SCRAMJET - STATIC Build: 1.5 (first officially markeded build BTW)
-created+founded by: hahahah67-pixel
+# SCRAMJET - STATIC
 
+### Build 1.5 (First Official Release)
+**Created & Maintained by:** hahahah67-pixel
 
-A static build of Scramjet internet proxy by mecuryworkshop powered by public WISP libcurl URL by aura.pro
+---
 
-CREDIT:
-merucryworkshop: for creating scramjet proxy and suppling the needed engine files
-Also mercuryworkshop: for creating the WISP server and libcurl transprt layers used by Scramjet itself, and for this static version
-Aura team: for providing a public WISP/libcurl server for SJ-static to fetch keeping this project static
-This project and all other open-source technolgies used in it are lisenced by the APGL 3.0 public Lisence more questions? dmca.com
+## 🚀 About the Project
 
-this static Scramjet build is of scramjet 1.10 and uses the same engine parts straight from the offical Scramjet Example-App
+This is a static build of the **Scramjet** internet proxy, originally developed by **MercuryWorkshop**. This deployment is powered by a public WISP libcurl URL provided by **aura.pro**. 
 
-Thank you for supporting this project!! If you fork it plz also ⭐ it!!
+This static variant is built on Scramjet version 1.10 and utilizes the core engine components directly from the official Scramjet Example-App, allowing it to remain entirely static.
+
+---
+
+## 🤝 Credits & Acknowledgments
+
+* **MercuryWorkshop:** For creating the Scramjet proxy, supplying the essential engine files, and developing the WISP server and libcurl transport layers utilized by Scramjet.
+* **Aura Team:** For hosting and providing the public WISP/libcurl server that `SJ-static` connects to, keeping this project serverless and static.
+
+---
+
+## 📄 License & Legal
+
+* **License:** This project and the open-source technologies it utilizes are licensed under the **AGPL 3.0 Public License**.
+* **Inquiries:** For legal questions or copyright inquiries, please refer to dmca.com.
+
+---
+
+## ⭐ Support
+
+Thank you for supporting this project! If you decide to fork it, please consider leaving a **Star (⭐)**!
