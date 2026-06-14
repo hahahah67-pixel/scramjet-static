@@ -11,26 +11,17 @@
     <style>
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       html, body { height: 100%; overflow: hidden; background: #000; font-family: 'Roboto', sans-serif; color: #fff; }
-
-      #home {
-        position: fixed; inset: 0; display: flex; flex-direction: column;
-        align-items: center; justify-content: center; padding-bottom: 12vh;
-        background: #000; z-index: 10; transition: opacity 0.18s ease;
-      }
+      #home { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 12vh; background: #000; z-index: 10; transition: opacity 0.18s ease; }
       #home.hidden { opacity: 0; pointer-events: none; }
-
       .title { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 300; letter-spacing: 0.04em; white-space: nowrap; margin-bottom: 2.2rem; text-shadow: 0 0 40px rgba(255,255,255,0.18); }
       .title span { font-weight: 500; }
-
       .bar-wrap { width: min(600px, 88vw); position: relative; }
       .bar-wrap input { width: 100%; padding: 0.85rem 3rem 0.85rem 1.25rem; border-radius: 999px; border: 1.5px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.06); color: #fff; font-family: 'Roboto', sans-serif; font-size: 1rem; font-weight: 300; outline: none; transition: border-color 0.2s, background 0.2s; backdrop-filter: blur(6px); }
       .bar-wrap input::placeholder { color: rgba(255,255,255,0.38); }
       .bar-wrap input:focus { border-color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.1); }
       .bar-wrap button { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 0.25rem; display: flex; align-items: center; color: rgba(255,255,255,0.5); transition: color 0.2s; }
       .bar-wrap button:hover { color: #fff; }
-
       #status { margin-top: 1rem; font-size: 0.78rem; color: rgba(255,255,255,0.3); letter-spacing: 0.03em; min-height: 1.2em; text-align: center; }
-
       #browser { position: fixed; inset: 0; width: 100%; height: 100%; border: none; background: #111; z-index: 5; display: none; }
       #browser.visible { display: block; }
     </style>
@@ -49,21 +40,10 @@
       <p id="status">Initialising…</p>
     </div>
 
-    <!--
-      Sandbox flags:
-      allow-scripts           — JS must run inside the proxy
-      allow-same-origin       — REQUIRED for SW to intercept iframe requests
-      allow-forms             — form submissions
-      allow-popups            — window.open(), target=_blank links
-      allow-modals            — alert/confirm/prompt
-      allow-downloads         — file downloads
-      allow-pointer-lock      — games and immersive apps
-      allow-top-navigation-by-user-activation — sites that redirect top frame on user gesture
-    -->
     <iframe
       id="browser"
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads allow-pointer-lock allow-top-navigation-by-user-activation"
-      allow="autoplay; fullscreen; clipboard-read; clipboard-write"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals allow-downloads"
+      allow="autoplay; fullscreen"
     ></iframe>
 
     <script type="module">
@@ -86,21 +66,13 @@
         home.classList.add('hidden')
         frame.classList.add('visible')
         if (!browsing) {
-          // Push sentinel so the very first back press returns to home
-          // rather than leaving the site entirely
           history.pushState({ browsing: true }, '')
           browsing = true
         }
       }
 
-      // Popstate fires when browser back/forward is pressed in the outer page
       window.addEventListener('popstate', () => {
-        if (browsing) {
-          showHome()
-          // Push sentinel again so next navigation back still works
-          // without leaving the site
-          history.pushState({ home: true }, '')
-        }
+        if (browsing) showHome()
       })
 
       function toUrl(raw) {
@@ -114,8 +86,7 @@
 
       try {
         const BASE   = new URL('./', document.baseURI).pathname
-        const WISP   = 'wss://wisp-wdnb.onrender.com/wisp/'
-        // Backup: const WISP = 'wss://anura.pro/wisp/'
+        const WISP   = 'wss://anura.pro/wisp/'
         const PREFIX = BASE + 'scramjet/'
 
         status.textContent = 'Loading engine…'
@@ -141,10 +112,6 @@
         status.textContent = 'Connecting transport…'
         const conn = new _0zzl94._ak44v7(BASE + 'bare-mux/bare-mux-worker.js')
         await conn.setTransport(BASE + 'transport/libcurl.mjs', [{ wisp: WISP }])
-
-        // Push initial sentinel entry so pressing back from home
-        // doesn't immediately leave the site on very first load
-        history.replaceState({ home: true }, '')
 
         status.textContent = 'Ready'
 
