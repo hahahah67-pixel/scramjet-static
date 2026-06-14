@@ -1,6 +1,6 @@
 // Scramjet STATIC — Service Worker
 // Engine: Scramjet v1.1.0 (MercuryWorkshop)
-// Transport: libcurl over wss://anura.pro/wisp/
+// Transport: libcurl over wss://wisp-wdnb.onrender.com/wisp/
 
 importScripts('./scramjet-engine/scramjet-all.js')
 
@@ -15,14 +15,12 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim())
 })
 
-// Decode a scramjet-encoded URL back to the real destination URL
-function getDecodedUrl(encodedUrl) {
+function getDecodedUrl(reqUrl) {
   try {
     if (!scramjet.config) return null
     const prefix = self.location.origin + scramjet.config.prefix
-    if (!encodedUrl.startsWith(prefix)) return null
-    const encoded = encodedUrl.slice(prefix.length)
-    return decodeURIComponent(encoded)
+    if (!reqUrl.startsWith(prefix)) return null
+    return decodeURIComponent(reqUrl.slice(prefix.length))
   } catch {
     return null
   }
@@ -31,29 +29,37 @@ function getDecodedUrl(encodedUrl) {
 async function handleRequest(event) {
   await scramjet.loadConfig()
 
-  if (!scramjet.route(event)) return fetch(event.request)
+  if (!scramjet.route(event)) {
+    return fetch(event.request).catch(() =>
+      new Response('Network error', { status: 503 })
+    )
+  }
 
-  // Check if the destination URL uses a non-http/https protocol
-  // (e.g. snssdk1340://, intent://, tiktok://, etc.)
-  // libcurl cannot handle these — return an empty 200 response silently
-  // instead of showing an ugly error screen
   const decoded = getDecodedUrl(event.request.url)
   if (decoded) {
     try {
-      const url = new URL(decoded)
-      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      const destUrl = new URL(decoded)
+      if (destUrl.protocol !== 'http:' && destUrl.protocol !== 'https:') {
         return new Response('', { status: 200 })
       }
     } catch {
-      // Malformed URL — also silently ignore
       return new Response('', { status: 200 })
     }
   }
 
-  return scramjet.fetch(event)
+  return scramjet.fetch(event).catch(() =>
+    new Response('', { status: 200 })
+  )
 }
 
 self.addEventListener('fetch', (event) => {
-  if (new URL(event.request.url).origin !== self.location.origin) return
+  // Safe URL parse - non-http protocols like snssdk:// throw in new URL()
+  let origin
+  try {
+    origin = new URL(event.request.url).origin
+  } catch {
+    return
+  }
+  if (origin !== self.location.origin) return
   event.respondWith(handleRequest(event))
 })
