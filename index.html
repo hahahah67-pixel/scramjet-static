@@ -116,9 +116,25 @@
         })
         await sj.init()
 
+        // setTransport can hang if the SharedWorker takes too long loading
+        // libcurl.mjs (2MB). Retry up to 3 times with a 12s timeout each.
         status.textContent = 'Connecting transport…'
         const conn = new _0zzl94._ak44v7(BASE + 'bare-mux/bare-mux-worker.js')
-        await conn.setTransport(BASE + 'transport/libcurl.mjs', [{ wisp: WISP }])
+        let connected = false
+        for (let i = 1; i <= 3; i++) {
+          try {
+            if (i > 1) status.textContent = `Connecting transport… (attempt ${i}/3)`
+            await Promise.race([
+              conn.setTransport(BASE + 'transport/libcurl.mjs', [{ wisp: WISP }]),
+              new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000))
+            ])
+            connected = true
+            break
+          } catch {
+            if (i < 3) await new Promise(r => setTimeout(r, 1500))
+          }
+        }
+        if (!connected) throw new Error('Transport failed to connect after 3 attempts. Try reloading.')
 
         history.replaceState({ home: true }, '')
         status.textContent = 'Ready'
