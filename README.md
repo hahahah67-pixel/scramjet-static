@@ -2,6 +2,8 @@
 
 ### Build 1.5 (First Officialy Documentaied Release)
 **Created & Maintained by:** hahahah67-pixel
+ORIGINAL scramjet-static public program creation date:
+June 11, 2026 (6/11/26)
 
 ---
 align="center"><img src="https://raw.githubusercontent.com/hahahah67-pixel/scramjet-static-demo-build/main/transport/scramjett.png" height="200"></p>
