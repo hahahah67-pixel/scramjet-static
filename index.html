@@ -52,10 +52,6 @@
       const frame   = document.getElementById('browser')
       const bar     = document.getElementById('searchbar')
 
-      // BUG 2+3 FIX: Clear iframe immediately on page load so no
-      // previously cached URL bleeds through into the new session
-      frame.src = 'about:blank'
-
       let browsing = false
 
       function showHome() {
@@ -66,24 +62,35 @@
       }
 
       function showBrowser(encodedUrl) {
-        frame.src = encodedUrl
+        // Use replace() so about:blank is NOT added to iframe history
+        // This prevents the black blank-page flash when pressing back
+        if (!browsing) {
+          // First navigation: use replace so no blank entry in iframe history
+          frame.contentWindow.location.replace(encodedUrl)
+        } else {
+          frame.src = encodedUrl
+        }
         home.classList.add('hidden')
         frame.classList.add('visible')
         if (!browsing) {
+          // Push ONE sentinel entry so back button works
           history.pushState({ browsing: true }, '')
           browsing = true
         }
       }
 
+      // hashchange is fired when location.hash changes — completely separate
+      // from iframe joint history, so Chrome never confuses them
+      window.addEventListener('hashchange', () => {
+        if (location.hash === '' || location.hash === '#') {
+          if (browsing) showHome()
+        }
+      })
+
+      // popstate catches back button when hash approach alone isn't enough
       window.addEventListener('popstate', (e) => {
-        // When popstate fires, the state tells us where we are.
-        // If state is {browsing:true} we just went BACK to the browsing sentinel
-        // which means user exhausted iframe history -> show home.
-        // Any other state (including null from iframe navigations) -> ignore,
-        // Chrome is handling iframe back/forward natively.
         if (e.state && e.state.browsing) {
           showHome()
-          // Replace the browsing entry with home so it doesn't linger
           history.replaceState({ home: true }, '')
         }
       })
@@ -102,11 +109,6 @@
         const WISP   = 'wss://anura.pro/wisp/'
         const PREFIX = BASE + 'scramjet/'
 
-        // BUG 1 FIX: Only do the nuclear SW unregister + IDB delete on
-        // first ever load when the SW is NOT yet controlling this page.
-        // On reload the SW is already controlling, IDB is already valid —
-        // doing cleanup would cause deleteDatabase to block because the SW
-        // holds the IDB open, causing the "Writing config" hang.
         const isFirstLoad = !navigator.serviceWorker.controller
 
         if (isFirstLoad) {
@@ -134,16 +136,12 @@
         })
 
         if (isFirstLoad) {
-          // First load: init BEFORE registering SW so IDB stores
-          // are created before the SW can try to open them
           status.textContent = 'Writing config…'
           await sj.init()
           status.textContent = 'Registering service worker…'
           await navigator.serviceWorker.register(BASE + 'sw.js', { scope: BASE })
           await navigator.serviceWorker.ready
         } else {
-          // Reload: SW already active, IDB already valid
-          // Register (no-op if same SW) then init to refresh config
           status.textContent = 'Registering service worker…'
           await navigator.serviceWorker.register(BASE + 'sw.js', { scope: BASE })
           await navigator.serviceWorker.ready
