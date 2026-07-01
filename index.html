@@ -22,6 +22,94 @@
       .bar-wrap button { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 0.25rem; display: flex; align-items: center; color: rgba(255,255,255,0.5); transition: color 0.2s; }
       .bar-wrap button:hover { color: #fff; }
       #status { margin-top: 1rem; font-size: 0.78rem; color: rgba(255,255,255,0.3); letter-spacing: 0.03em; min-height: 1.2em; text-align: center; }
+
+      /* ── WISP settings panel ─────────────────────────────────────── */
+      #wisp-panel {
+        width: min(600px, 88vw);
+        margin-top: 1.4rem;
+        background: rgba(126,200,255,0.1);
+        border: 1.5px solid rgba(126,200,255,0.35);
+        border-radius: 14px;
+        padding: 0.85rem 1rem;
+      }
+
+      #wisp-panel .wisp-label {
+        font-size: 0.72rem;
+        font-weight: 500;
+        color: #fff;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.5rem;
+      }
+
+      #wisp-panel .wisp-row {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      #wisp-url-input {
+        flex: 1;
+        min-width: 0;
+        background: rgba(0,0,0,0.35);
+        border: 1px solid rgba(126,200,255,0.3);
+        border-radius: 999px;
+        color: #cfe9ff;
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.78rem;
+        padding: 0.5rem 0.9rem;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      #wisp-url-input:focus { border-color: #7ec8ff; }
+      #wisp-url-input::selection { background: #1a6abf; color: #fff; }
+
+      .wisp-btn {
+        flex-shrink: 0;
+        background: #4a9eff;
+        color: #06121f;
+        border: none;
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        padding: 0.5rem 0.9rem;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background 0.15s, transform 0.08s;
+      }
+      .wisp-btn:hover { background: #6ab0ff; }
+      .wisp-btn:active { transform: scale(0.95); }
+      .wisp-btn.reset { background: #3a7fd6; }
+      .wisp-btn.reset:hover { background: #5590dd; }
+
+      /* ── "wisp server set!" toast ────────────────────────────────── */
+      #wisp-toast {
+        position: fixed;
+        bottom: -60px;
+        left: 1.2rem;
+        background: #4a9eff;
+        color: #06121f;
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.82rem;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        padding: 0.65rem 1.4rem;
+        border-radius: 999px;
+        box-shadow: 0 4px 18px rgba(74,158,255,0.4);
+        z-index: 50;
+        transition: bottom 0.35s cubic-bezier(.34,1.56,.64,1), opacity 0.3s ease, transform 0.3s ease;
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      #wisp-toast.visible {
+        bottom: 1.2rem;
+        opacity: 1;
+        transform: translateX(0);
+      }
+      #wisp-toast.leaving {
+        opacity: 0;
+        transform: translateX(-40px);
+      }
       #browser { position: fixed; inset: 0; width: 100%; height: 100%; border: none; background: #111; z-index: 5; display: none; }
       #browser.visible { display: block; }
 
@@ -75,7 +163,20 @@
         </button>
       </div>
       <p id="status">Initialising…</p>
+
+      <!-- WISP server settings panel -->
+      <div id="wisp-panel">
+        <div class="wisp-label">WISP SERVER</div>
+        <div class="wisp-row">
+          <input id="wisp-url-input" type="text" autocomplete="off" spellcheck="false" />
+          <button id="wisp-set-btn" class="wisp-btn">Set</button>
+          <button id="wisp-reset-btn" class="wisp-btn reset">Reset</button>
+        </div>
+      </div>
     </div>
+
+    <!-- "wisp server set!" toast -->
+    <div id="wisp-toast">wisp server set!</div>
 
     <iframe
       id="browser"
@@ -101,6 +202,10 @@
       const bar     = document.getElementById('searchbar')
       const homeFab = document.getElementById('home-fab')
       const loadBar = document.getElementById('load-bar')
+      const wispInput   = document.getElementById('wisp-url-input')
+      const wispSetBtn  = document.getElementById('wisp-set-btn')
+      const wispResetBtn = document.getElementById('wisp-reset-btn')
+      const wispToast   = document.getElementById('wisp-toast')
 
       // ── Loading bar — fake but convincing multi-stage progress ────────
       // Fast burst at the start, slows down as it approaches the "end",
@@ -144,6 +249,61 @@
       }
 
       let browsing = false
+
+      const DEFAULT_WISP = 'wss://anura.pro/wisp/'
+      let currentConn = null // set once bare-mux connection object exists
+
+      function getSavedWisp() {
+        return localStorage.getItem('fish-wisp') || DEFAULT_WISP
+      }
+
+      function showToast() {
+        clearTimeout(showToast._hideTimer)
+        clearTimeout(showToast._cleanupTimer)
+        wispToast.classList.remove('leaving')
+        // Force reflow so re-triggering the animation works if clicked twice fast
+        void wispToast.offsetWidth
+        wispToast.classList.add('visible')
+        showToast._hideTimer = setTimeout(() => {
+          wispToast.classList.add('leaving')
+          wispToast.classList.remove('visible')
+          showToast._cleanupTimer = setTimeout(() => {
+            wispToast.classList.remove('leaving')
+          }, 350)
+        }, 4000)
+      }
+
+      async function applyWisp(url, { persist = true } = {}) {
+        if (!currentConn) return
+        await currentConn.setTransport(
+          new URL('./', document.baseURI).pathname + 'transport/libcurl.mjs',
+          [{ wisp: url }]
+        )
+        if (persist) localStorage.setItem('fish-wisp', url)
+        wispInput.value = url
+        showToast()
+      }
+
+      wispSetBtn.addEventListener('click', async () => {
+        const val = wispInput.value.trim()
+        if (!val) return
+        try {
+          await applyWisp(val)
+        } catch (e) {
+          console.error('[Scramjet STATIC] WISP set failed:', e)
+        }
+      })
+
+      wispResetBtn.addEventListener('click', async () => {
+        try {
+          await applyWisp(DEFAULT_WISP)
+        } catch (e) {
+          console.error('[Scramjet STATIC] WISP reset failed:', e)
+        }
+      })
+
+      // Show whatever is currently saved as soon as the page loads
+      wispInput.value = getSavedWisp()
 
       function showHome() {
         browsing = false
@@ -200,7 +360,7 @@
 
       try {
         const BASE   = new URL('./', document.baseURI).pathname
-        const WISP   = 'wss://anura.pro/wisp/'
+        const WISP   = getSavedWisp()
         const PREFIX = BASE + 'scramjet/'
 
         const isFirstLoad = !navigator.serviceWorker.controller
@@ -246,6 +406,7 @@
         status.textContent = 'Connecting transport…'
         const conn = new _0zzl94._ak44v7(BASE + 'bare-mux/bare-mux-worker.js')
         await conn.setTransport(BASE + 'transport/libcurl.mjs', [{ wisp: WISP }])
+        currentConn = conn
 
         history.replaceState({ home: true }, '')
         status.textContent = 'Ready'
@@ -266,5 +427,4 @@
       }
     </script>
   </body>
-      </html>
-  
+</html>
