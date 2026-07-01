@@ -276,18 +276,40 @@
 
       async function applyWisp(url, { persist = true } = {}) {
         if (!currentConn) {
-          console.warn('[Scramjet STATIC] Cannot set WISP — transport not ready yet')
-          wispSetBtn.textContent = 'Not ready…'
-          setTimeout(() => { wispSetBtn.textContent = 'Set' }, 1500)
+          wispSetBtn.textContent = 'Not ready yet…'
+          setTimeout(() => { wispSetBtn.textContent = 'Set' }, 1800)
           return
         }
-        await currentConn.setTransport(
-          BASE + 'transport/libcurl.mjs',
-          [{ wisp: url }]
-        )
-        if (persist) localStorage.setItem('fish-wisp', url)
-        wispInput.value = url
-        showToast()
+        wispSetBtn.disabled = true
+        wispResetBtn.disabled = true
+        const originalText = wispSetBtn.textContent
+        wispSetBtn.textContent = 'Setting…'
+        try {
+          await currentConn.setTransport(
+            BASE + 'transport/libcurl.mjs',
+            [{ wisp: url }]
+          )
+          if (persist) localStorage.setItem('fish-wisp', url)
+          wispInput.value = url
+          wispSetBtn.textContent = 'Set'
+          showToast()
+        } catch (err) {
+          // Surface the real error directly on the button instead of
+          // silently failing — this tells us exactly what's wrong
+          wispSetBtn.textContent = 'Failed!'
+          wispToast.textContent = 'Error: ' + err.message
+          wispToast.style.background = '#ff6b6b'
+          showToast()
+          setTimeout(() => {
+            wispToast.textContent = 'wisp server set!'
+            wispToast.style.background = ''
+          }, 4200)
+          console.error('[Scramjet STATIC] setTransport failed:', err)
+          setTimeout(() => { wispSetBtn.textContent = originalText }, 2000)
+        } finally {
+          wispSetBtn.disabled = false
+          wispResetBtn.disabled = false
+        }
       }
 
       wispSetBtn.addEventListener('click', async () => {
@@ -433,4 +455,3 @@
     </script>
   </body>
 </html>
-  
