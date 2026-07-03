@@ -257,6 +257,20 @@
     <script type="module">
       const status  = document.getElementById('status')
       const home    = document.getElementById('home')
+
+      // Global safety net — if ANYTHING throws anywhere in this script,
+      // show it directly on screen instead of leaving a silent stuck state
+      window.addEventListener('error', (e) => {
+        status.style.color = '#f87171'
+        status.textContent = 'Fatal error: ' + (e.error?.message || e.message)
+        console.error('[Scramjet STATIC] Uncaught error:', e.error || e.message)
+      })
+      window.addEventListener('unhandledrejection', (e) => {
+        status.style.color = '#f87171'
+        status.textContent = 'Fatal error: ' + (e.reason?.message || e.reason)
+        console.error('[Scramjet STATIC] Unhandled rejection:', e.reason)
+      })
+
       const frame   = document.getElementById('browser')
       const bar     = document.getElementById('searchbar')
       const homeFab = document.getElementById('home-fab')
@@ -318,7 +332,20 @@
       let currentConn = null // set once bare-mux connection object exists
 
       function getSavedWisp() {
-        return localStorage.getItem('fish-wisp') || DEFAULT_WISP
+        try {
+          return localStorage.getItem('fish-wisp') || DEFAULT_WISP
+        } catch (e) {
+          console.warn('[Scramjet STATIC] localStorage unavailable, using default WISP:', e)
+          return DEFAULT_WISP
+        }
+      }
+
+      function saveWisp(url) {
+        try {
+          localStorage.setItem('fish-wisp', url)
+        } catch (e) {
+          console.warn('[Scramjet STATIC] Could not persist WISP choice:', e)
+        }
       }
 
       function showToast() {
@@ -366,7 +393,7 @@
             BASE + 'transport/libcurl.mjs',
             [{ wisp: url }]
           )
-          if (persist) localStorage.setItem('fish-wisp', url)
+          if (persist) saveWisp(url)
           wispInput.value = url
           wispSetBtn.textContent = 'Set'
           showToast()
@@ -514,37 +541,4 @@
           reloading = true
           setReloadIcon(X_ICON)
           showReloadToast(
-            `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${WIFI_ICON}</svg>` +
-            `<span>No internet connection, plz reconnect. Reload stopped.</span>`
-          )
-          hideReloadToast(3000)
-          setTimeout(() => {
-            reloading = false
-            setReloadIcon(RELOAD_ICON)
-          }, 3000)
-          return
-        }
-
-        reloading = true
-        setReloadIcon(X_ICON)
-        startDotsAnimation()
-        startLoadBar()
-
-        try {
-          frame.contentWindow.location.reload()
-        } catch {
-          frame.src = frame.src
-        }
-
-        // Safety watchdog: if a network drop happens mid-reload and no
-        // load event ever fires, don't leave the UI stuck spinning forever
-        clearTimeout(reloadWatchdog)
-        reloadWatchdog = setTimeout(() => {
-          if (reloading && !navigator.onLine) {
-            finishReload({ networkLost: true })
-          }
-        }, 8000)
-      }
-
-      function cancelReload() {
-        if (!r
+            `<svg width="16" height="16" viewBox="0 0 24 24" fil
