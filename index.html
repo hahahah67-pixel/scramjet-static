@@ -255,6 +255,11 @@
     <div id="reload-toast"></div>
 
     <script type="module">
+      // IMMEDIATE marker — if you don't see "Script started..." appear
+      // instantly on page load, the module script is not executing at all,
+      // which means this is a deployment/caching issue, not a logic bug.
+      document.getElementById('status').textContent = 'Script started — build v2.1'
+
       const status  = document.getElementById('status')
       const home    = document.getElementById('home')
 
@@ -533,12 +538,4 @@
         reloadIcon.innerHTML = iconSvg
       }
 
-      function startReload() {
-        if (!browsing || reloading) return
-
-        // No network — fail immediately with the wifi message
-        if (!navigator.onLine) {
-          reloading = true
-          setReloadIcon(X_ICON)
-          showReloadToast(
-            `<svg width="16" height="16" viewBox="0 0 24 24" fil
+      function
