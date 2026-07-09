@@ -81,6 +81,63 @@
       .wisp-btn:active { transform: scale(0.95); }
       .wisp-btn.reset { background: #3a7fd6; }
       .wisp-btn.reset:hover { background: #5590dd; }
+      .wisp-btn.save { background: #e5484d; color: #fff; }
+      .wisp-btn.save:hover { background: #f16469; }
+
+      /* Divider line between WISP URL and transport method sections */
+      .wisp-divider {
+        height: 1px;
+        background: rgba(126,200,255,0.25);
+        margin: 0.85rem 0;
+        width: 100%;
+      }
+
+      /* Transport method toggle — two pill buttons side by side */
+      .transport-toggle {
+        flex: 1;
+        display: flex;
+        gap: 0.4rem;
+        min-width: 0;
+      }
+
+      .transport-opt {
+        flex: 1;
+        min-width: 0;
+        background: rgba(0,0,0,0.35);
+        border: 1.5px solid rgba(126,200,255,0.3);
+        border-radius: 999px;
+        color: #8fbde0;
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 500;
+        padding: 0.5rem 0.7rem;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .transport-opt .suggested {
+        font-weight: 400;
+        opacity: 0.7;
+        font-size: 0.68rem;
+      }
+
+      .transport-opt:hover {
+        border-color: rgba(126,200,255,0.6);
+        color: #cfe9ff;
+      }
+
+      .transport-opt.active {
+        background: #4a9eff;
+        border-color: #4a9eff;
+        color: #06121f;
+      }
+      .transport-opt.active .suggested {
+        color: #06121f;
+        opacity: 0.75;
+      }
 
       /* ── "wisp server set!" toast ────────────────────────────────── */
       #wisp-toast {
@@ -220,6 +277,22 @@
           <button id="wisp-set-btn" class="wisp-btn">Set</button>
           <button id="wisp-reset-btn" class="wisp-btn reset">Reset</button>
         </div>
+
+        <div class="wisp-divider"></div>
+
+        <div class="wisp-label">TRANSPORT METHOD</div>
+        <div class="wisp-row">
+          <div class="transport-toggle">
+            <button id="transport-libcurl-btn" class="transport-opt active" data-transport="libcurl">
+              libcurl <span class="suggested">(default, suggested)</span>
+            </button>
+            <button id="transport-epoxy-btn" class="transport-opt" data-transport="epoxy">
+              epoxy
+            </button>
+          </div>
+          <button id="transport-save-btn" class="wisp-btn save">Save</button>
+          <button id="transport-reset-btn" class="wisp-btn reset">Reset</button>
+        </div>
       </div>
     </div>
 
@@ -288,6 +361,10 @@
       const wispSetBtn  = document.getElementById('wisp-set-btn')
       const wispResetBtn = document.getElementById('wisp-reset-btn')
       const wispToast   = document.getElementById('wisp-toast')
+      const transportLibcurlBtn = document.getElementById('transport-libcurl-btn')
+      const transportEpoxyBtn   = document.getElementById('transport-epoxy-btn')
+      const transportSaveBtn   = document.getElementById('transport-save-btn')
+      const transportResetBtn  = document.getElementById('transport-reset-btn')
 
       // ── Loading bar — fake but convincing multi-stage progress ────────
       // Fast burst at the start, slows down as it approaches the "end",
@@ -334,7 +411,38 @@
 
       const BASE = new URL('./', document.baseURI).pathname
       const DEFAULT_WISP = 'wss://anura.pro/wisp/'
+      const DEFAULT_TRANSPORT = 'libcurl'
       let currentConn = null // set once bare-mux connection object exists
+      let currentTransport = DEFAULT_TRANSPORT // 'libcurl' or 'epoxy'
+      let pendingTransport = DEFAULT_TRANSPORT // what's selected in UI but not yet saved
+
+      function transportPath(method) {
+        return BASE + 'transport/' + method + '.mjs'
+      }
+
+      function getSavedTransport() {
+        try {
+          const saved = localStorage.getItem('fish-transport')
+          return (saved === 'epoxy' || saved === 'libcurl') ? saved : DEFAULT_TRANSPORT
+        } catch (e) {
+          console.warn('[Scramjet STATIC] localStorage unavailable, using default transport:', e)
+          return DEFAULT_TRANSPORT
+        }
+      }
+
+      function saveTransportChoice(method) {
+        try {
+          localStorage.setItem('fish-transport', method)
+        } catch (e) {
+          console.warn('[Scramjet STATIC] Could not persist transport choice:', e)
+        }
+      }
+
+      function setTransportUI(method) {
+        pendingTransport = method
+        transportLibcurlBtn.classList.toggle('active', method === 'libcurl')
+        transportEpoxyBtn.classList.toggle('active', method === 'epoxy')
+      }
 
       function getSavedWisp() {
         try {
@@ -395,7 +503,7 @@
         wispSetBtn.textContent = 'Setting…'
         try {
           await currentConn.setTransport(
-            BASE + 'transport/libcurl.mjs',
+            transportPath(currentTransport),
             [{ wisp: url }]
           )
           if (persist) saveWisp(url)
@@ -422,310 +530,4 @@
       }
 
       wispSetBtn.addEventListener('click', async () => {
-        const val = normalizeWispUrl(wispInput.value)
-        if (!val) return
-        try {
-          await applyWisp(val)
-        } catch (e) {
-          console.error('[Scramjet STATIC] WISP set failed:', e)
-        }
-      })
-
-      wispResetBtn.addEventListener('click', async () => {
-        try {
-          await applyWisp(DEFAULT_WISP)
-        } catch (e) {
-          console.error('[Scramjet STATIC] WISP reset failed:', e)
-        }
-      })
-
-      // Show whatever is currently saved as soon as the page loads
-      wispInput.value = getSavedWisp()
-
-      function showHome() {
-        browsing = false
-        home.classList.remove('hidden')
-        frame.classList.remove('visible')
-        fabBar.classList.remove('visible')
-        bar.value = ''
-        cancelReload()
-      }
-
-      function showBrowser(encodedUrl) {
-        startLoadBar()
-        if (!browsing) {
-          frame.contentWindow.location.replace(encodedUrl)
-        } else {
-          frame.src = encodedUrl
-        }
-        home.classList.add('hidden')
-        frame.classList.add('visible')
-        fabBar.classList.add('visible')
-        if (!browsing) {
-          history.pushState({ browsing: true }, '')
-          browsing = true
-        }
-      }
-
-      // Fire the loading bar to completion whenever the iframe finishes
-      // loading — this covers both initial navigation and in-site link clicks
-      frame.addEventListener('load', () => {
-        if (browsing) finishLoadBar()
-      })
-
-      // The manual home button — direct call, no history/popstate involved
-      // at all, so it can never be broken by Chrome's iframe joint history
-      homeFab.addEventListener('click', () => {
-        showHome()
-        history.replaceState({ home: true }, '')
-      })
-
-      // ── Reload button ─────────────────────────────────────────────────
-      const RELOAD_ICON = `
-        <polyline points="23 4 23 10 17 10"/>
-        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-      `
-      const X_ICON = `
-        <line x1="18" y1="6" x2="6" y2="18"/>
-        <line x1="6" y1="6" x2="18" y2="18"/>
-      `
-      const WIFI_ICON = `
-        <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
-        <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
-        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
-        <line x1="12" y1="20" x2="12.01" y2="20"/>
-      `
-
-      let reloading = false
-      let dotsTimer = null
-      let reloadWatchdog = null
-
-      function showReloadToast(html, colorClass) {
-        reloadToast.innerHTML = html
-        reloadToast.classList.remove('leaving')
-        void reloadToast.offsetWidth
-        reloadToast.classList.add('visible')
-      }
-
-      function hideReloadToast(afterMs) {
-        setTimeout(() => {
-          reloadToast.classList.add('leaving')
-          reloadToast.classList.remove('visible')
-        }, afterMs)
-      }
-
-      function startDotsAnimation() {
-        showReloadToast('Reloading page<span class="dots"><span>.</span><span>.</span><span>.</span></span>')
-        const dots = reloadToast.querySelectorAll('.dots span')
-        let i = 0
-        clearInterval(dotsTimer)
-        dotsTimer = setInterval(() => {
-          dots.forEach((d, idx) => d.classList.toggle('active', idx <= i))
-          i = (i + 1) % 3
-          if (i === 0) {
-            // brief pause with none active before restarting the 1-2-3 pattern
-            dots.forEach(d => d.classList.remove('active'))
-          }
-        }, 350)
-      }
-
-      function stopDotsAnimation() {
-        clearInterval(dotsTimer)
-        dotsTimer = null
-      }
-
-      function setReloadIcon(iconSvg) {
-        reloadIcon.innerHTML = iconSvg
-      }
-
-      function startReload() {
-        if (!browsing || reloading) return
-
-        // No network — fail immediately with the wifi message
-        if (!navigator.onLine) {
-          reloading = true
-          setReloadIcon(X_ICON)
-          showReloadToast(
-            `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${WIFI_ICON}</svg>` +
-            `<span>No internet connection, plz reconnect. Reload stopped.</span>`
-          )
-          hideReloadToast(3000)
-          setTimeout(() => {
-            reloading = false
-            setReloadIcon(RELOAD_ICON)
-          }, 3000)
-          return
-        }
-
-        reloading = true
-        setReloadIcon(X_ICON)
-        startDotsAnimation()
-        startLoadBar()
-
-        try {
-          frame.contentWindow.location.reload()
-        } catch {
-          frame.src = frame.src
-        }
-
-        // Safety watchdog: if a network drop happens mid-reload and no
-        // load event ever fires, don't leave the UI stuck spinning forever
-        clearTimeout(reloadWatchdog)
-        reloadWatchdog = setTimeout(() => {
-          if (reloading && !navigator.onLine) {
-            finishReload({ networkLost: true })
-          }
-        }, 8000)
-      }
-
-      function cancelReload() {
-        if (!reloading) return
-        reloading = false
-        stopDotsAnimation()
-        clearTimeout(reloadWatchdog)
-        setReloadIcon(RELOAD_ICON)
-        showReloadToast('Reload stopped')
-        hideReloadToast(1000)
-      }
-
-      function finishReload({ networkLost = false } = {}) {
-        reloading = false
-        stopDotsAnimation()
-        clearTimeout(reloadWatchdog)
-        setReloadIcon(RELOAD_ICON)
-
-        if (networkLost) {
-          showReloadToast(
-            `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${WIFI_ICON}</svg>` +
-            `<span>No internet connection, plz reconnect. Reload stopped.</span>`
-          )
-          hideReloadToast(3000)
-        } else {
-          reloadToast.classList.add('leaving')
-          reloadToast.classList.remove('visible')
-        }
-      }
-
-      reloadFab.addEventListener('click', () => {
-        if (reloading) {
-          cancelReload()
-        } else {
-          startReload()
-        }
-      })
-
-      // Detect network loss while a reload is actively in progress
-      window.addEventListener('offline', () => {
-        if (reloading) {
-          clearTimeout(reloadWatchdog)
-          finishReload({ networkLost: true })
-        }
-      })
-
-      // When the iframe finishes reloading, close out the reload UI state
-      frame.addEventListener('load', () => {
-        if (reloading) {
-          clearTimeout(reloadWatchdog)
-          finishReload()
-        }
-      })
-
-      window.addEventListener('popstate', (e) => {
-        if (e.state && e.state.browsing) {
-          showHome()
-          history.replaceState({ home: true }, '')
-        }
-      })
-
-      function toUrl(raw) {
-        const s = raw.trim()
-        if (!s) return null
-        if (/^https?:\/\//i.test(s)) return s
-        if (/^\/\//.test(s)) return 'https:' + s
-        if (/^[^\s]+\.[^\s]+$/.test(s)) return 'https://' + s
-        return 'https://duckduckgo.com/?q=' + encodeURIComponent(s)
-      }
-
-      try {
-        const WISP   = getSavedWisp()
-        const PREFIX = BASE + 'scramjet/'
-
-        const isFirstLoad = !navigator.serviceWorker.controller
-
-        if (isFirstLoad) {
-          status.textContent = 'Preparing…'
-          try {
-            const regs = await Promise.race([
-              navigator.serviceWorker.getRegistrations(),
-              new Promise((_, rej) => setTimeout(() => rej(new Error('SW registration lookup timed out')), 5000))
-            ])
-            await Promise.all(regs.map(r => r.unregister()))
-          } catch (e) {
-            console.warn('[Scramjet STATIC] SW cleanup skipped:', e)
-          }
-          try {
-            await Promise.race([
-              new Promise(r => {
-                const req = indexedDB.deleteDatabase('$scramjet')
-                req.onsuccess = req.onerror = req.onblocked = r
-              }),
-              new Promise(r => setTimeout(r, 5000))
-            ])
-          } catch (e) {
-            console.warn('[Scramjet STATIC] IDB cleanup skipped:', e)
-          }
-        }
-
-        status.textContent = 'Loading engine…'
-        await import('./scramjet-engine/scramjet.js')
-
-        status.textContent = 'Starting controller…'
-        const { ScramjetController } = $scramjetLoadController()
-        const sj = new ScramjetController({
-          prefix: PREFIX,
-          files: {
-            wasm: BASE + 'scramjet-engine/scramjet.wasm',
-            all:  BASE + 'scramjet-engine/scramjet-all.js',
-            sync: BASE + 'scramjet-engine/scramjet-sync.js',
-          },
-        })
-
-        if (isFirstLoad) {
-          status.textContent = 'Writing config…'
-          await sj.init()
-          status.textContent = 'Registering service worker…'
-          await navigator.serviceWorker.register(BASE + 'sw.js', { scope: BASE })
-          await navigator.serviceWorker.ready
-        } else {
-          status.textContent = 'Registering service worker…'
-          await navigator.serviceWorker.register(BASE + 'sw.js', { scope: BASE })
-          await navigator.serviceWorker.ready
-          status.textContent = 'Writing config…'
-          await sj.init()
-        }
-
-        status.textContent = 'Connecting transport…'
-        const conn = new _0zzl94._ak44v7(BASE + 'bare-mux/bare-mux-worker.js')
-        await conn.setTransport(BASE + 'transport/libcurl.mjs', [{ wisp: WISP }])
-        currentConn = conn
-
-        history.replaceState({ home: true }, '')
-        status.textContent = 'Ready'
-
-        function navigate(raw) {
-          const url = toUrl(raw)
-          if (!url) return
-          showBrowser(sj.encodeUrl(url))
-        }
-
-        document.getElementById('go-btn').addEventListener('click', () => navigate(bar.value))
-        bar.addEventListener('keydown', e => { if (e.key === 'Enter') navigate(bar.value) })
-
-      } catch (err) {
-        status.style.color = '#f87171'
-        status.textContent = 'Error: ' + err.message
-        console.error('[Scramjet STATIC] init error:', err)
-      }
-    </script>
-  </body>
-</html>
+  
