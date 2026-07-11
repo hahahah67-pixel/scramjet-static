@@ -81,6 +81,63 @@
       .wisp-btn:active { transform: scale(0.95); }
       .wisp-btn.reset { background: #3a7fd6; }
       .wisp-btn.reset:hover { background: #5590dd; }
+      .wisp-btn.save { background: #e5484d; color: #fff; }
+      .wisp-btn.save:hover { background: #f16469; }
+
+      /* Divider line between WISP URL and transport method sections */
+      .wisp-divider {
+        height: 1px;
+        background: rgba(126,200,255,0.25);
+        margin: 0.85rem 0;
+        width: 100%;
+      }
+
+      /* Transport method toggle — two pill buttons side by side */
+      .transport-toggle {
+        flex: 1;
+        display: flex;
+        gap: 0.4rem;
+        min-width: 0;
+      }
+
+      .transport-opt {
+        flex: 1;
+        min-width: 0;
+        background: rgba(0,0,0,0.35);
+        border: 1.5px solid rgba(126,200,255,0.3);
+        border-radius: 999px;
+        color: #8fbde0;
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 500;
+        padding: 0.5rem 0.7rem;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .transport-opt .suggested {
+        font-weight: 400;
+        opacity: 0.7;
+        font-size: 0.68rem;
+      }
+
+      .transport-opt:hover {
+        border-color: rgba(126,200,255,0.6);
+        color: #cfe9ff;
+      }
+
+      .transport-opt.active {
+        background: #4a9eff;
+        border-color: #4a9eff;
+        color: #06121f;
+      }
+      .transport-opt.active .suggested {
+        color: #06121f;
+        opacity: 0.75;
+      }
 
       /* ── "wisp server set!" toast ────────────────────────────────── */
       #wisp-toast {
@@ -220,6 +277,22 @@
           <button id="wisp-set-btn" class="wisp-btn">Set</button>
           <button id="wisp-reset-btn" class="wisp-btn reset">Reset</button>
         </div>
+
+        <div class="wisp-divider"></div>
+
+        <div class="wisp-label">TRANSPORT METHOD</div>
+        <div class="wisp-row">
+          <div class="transport-toggle">
+            <button id="transport-libcurl-btn" class="transport-opt active" data-transport="libcurl">
+              libcurl <span class="suggested">(default, suggested)</span>
+            </button>
+            <button id="transport-epoxy-btn" class="transport-opt" data-transport="epoxy">
+              epoxy
+            </button>
+          </div>
+          <button id="transport-save-btn" class="wisp-btn save">Save</button>
+          <button id="transport-reset-btn" class="wisp-btn reset">Reset</button>
+        </div>
       </div>
     </div>
 
@@ -288,6 +361,10 @@
       const wispSetBtn  = document.getElementById('wisp-set-btn')
       const wispResetBtn = document.getElementById('wisp-reset-btn')
       const wispToast   = document.getElementById('wisp-toast')
+      const transportLibcurlBtn = document.getElementById('transport-libcurl-btn')
+      const transportEpoxyBtn   = document.getElementById('transport-epoxy-btn')
+      const transportSaveBtn   = document.getElementById('transport-save-btn')
+      const transportResetBtn  = document.getElementById('transport-reset-btn')
 
       // ── Loading bar — fake but convincing multi-stage progress ────────
       // Fast burst at the start, slows down as it approaches the "end",
@@ -334,7 +411,38 @@
 
       const BASE = new URL('./', document.baseURI).pathname
       const DEFAULT_WISP = 'wss://anura.pro/wisp/'
+      const DEFAULT_TRANSPORT = 'libcurl'
       let currentConn = null // set once bare-mux connection object exists
+      let currentTransport = DEFAULT_TRANSPORT // 'libcurl' or 'epoxy'
+      let pendingTransport = DEFAULT_TRANSPORT // what's selected in UI but not yet saved
+
+      function transportPath(method) {
+        return BASE + 'transport/' + method + '.mjs'
+      }
+
+      function getSavedTransport() {
+        try {
+          const saved = localStorage.getItem('fish-transport')
+          return (saved === 'epoxy' || saved === 'libcurl') ? saved : DEFAULT_TRANSPORT
+        } catch (e) {
+          console.warn('[Scramjet STATIC] localStorage unavailable, using default transport:', e)
+          return DEFAULT_TRANSPORT
+        }
+      }
+
+      function saveTransportChoice(method) {
+        try {
+          localStorage.setItem('fish-transport', method)
+        } catch (e) {
+          console.warn('[Scramjet STATIC] Could not persist transport choice:', e)
+        }
+      }
+
+      function setTransportUI(method) {
+        pendingTransport = method
+        transportLibcurlBtn.classList.toggle('active', method === 'libcurl')
+        transportEpoxyBtn.classList.toggle('active', method === 'epoxy')
+      }
 
       function getSavedWisp() {
         try {
@@ -395,7 +503,7 @@
         wispSetBtn.textContent = 'Setting…'
         try {
           await currentConn.setTransport(
-            BASE + 'transport/libcurl.mjs',
+            transportPath(currentTransport),
             [{ wisp: url }]
           )
           if (persist) saveWisp(url)
@@ -439,8 +547,74 @@
         }
       })
 
+      // ── Transport method (libcurl / epoxy) ─────────────────────────────
+      async function applyTransport(method) {
+        if (!currentConn) {
+          transportSaveBtn.textContent = 'Not ready yet…'
+          setTimeout(() => { transportSaveBtn.textContent = 'Save' }, 1800)
+          return
+        }
+        transportSaveBtn.disabled = true
+        transportResetBtn.disabled = true
+        const originalText = transportSaveBtn.textContent
+        transportSaveBtn.textContent = 'Saving…'
+        try {
+          // WISP URL carries over automatically — we reuse whatever is
+          // currently active, we're only swapping which transport file
+          // handles the connection to it
+          const wispUrl = wispInput.value || getSavedWisp()
+          await currentConn.setTransport(
+            transportPath(method),
+            [{ wisp: wispUrl }]
+          )
+          currentTransport = method
+          saveTransportChoice(method)
+          setTransportUI(method)
+          transportSaveBtn.textContent = 'Save'
+          wispToast.textContent = 'transport method set!'
+          wispToast.style.background = ''
+          showToast()
+        } catch (err) {
+          transportSaveBtn.textContent = 'Failed!'
+          wispToast.textContent = 'Error: ' + err.message
+          wispToast.style.background = '#ff6b6b'
+          showToast()
+          setTimeout(() => {
+            wispToast.textContent = 'wisp server set!'
+            wispToast.style.background = ''
+          }, 4200)
+          console.error('[Scramjet STATIC] Transport switch failed:', err)
+          setTimeout(() => { transportSaveBtn.textContent = originalText }, 2000)
+        } finally {
+          transportSaveBtn.disabled = false
+          transportResetBtn.disabled = false
+        }
+      }
+
+      // Clicking libcurl/epoxy only updates the UI selection —
+      // it does NOT apply until Save is pressed
+      transportLibcurlBtn.addEventListener('click', () => setTransportUI('libcurl'))
+      transportEpoxyBtn.addEventListener('click', () => setTransportUI('epoxy'))
+
+      transportSaveBtn.addEventListener('click', async () => {
+        try {
+          await applyTransport(pendingTransport)
+        } catch (e) {
+          console.error('[Scramjet STATIC] Transport save failed:', e)
+        }
+      })
+
+      transportResetBtn.addEventListener('click', async () => {
+        try {
+          await applyTransport(DEFAULT_TRANSPORT)
+        } catch (e) {
+          console.error('[Scramjet STATIC] Transport reset failed:', e)
+        }
+      })
+
       // Show whatever is currently saved as soon as the page loads
       wispInput.value = getSavedWisp()
+      setTransportUI(getSavedTransport())
 
       function showHome() {
         browsing = false
@@ -706,7 +880,17 @@
 
         status.textContent = 'Connecting transport…'
         const conn = new _0zzl94._ak44v7(BASE + 'bare-mux/bare-mux-worker.js')
-        await conn.setTransport(BASE + 'transport/libcurl.mjs', [{ wisp: WISP }])
+        currentTransport = getSavedTransport()
+        try {
+          await conn.setTransport(transportPath(currentTransport), [{ wisp: WISP }])
+        } catch (err) {
+          // If the saved transport (e.g. epoxy.mjs missing/broken) fails,
+          // fall back to libcurl instead of bricking the entire site
+          console.warn('[Scramjet STATIC] Saved transport failed, falling back to libcurl:', err)
+          currentTransport = 'libcurl'
+          saveTransportChoice('libcurl')
+          await conn.setTransport(transportPath('libcurl'), [{ wisp: WISP }])
+        }
         currentConn = conn
 
         history.replaceState({ home: true }, '')
