@@ -559,14 +559,11 @@
         const originalText = transportSaveBtn.textContent
         transportSaveBtn.textContent = 'Saving…'
         try {
-          // WISP URL carries over automatically — we reuse whatever is
-          // currently active, we're only swapping which transport file
-          // handles the connection to it
           const wispUrl = wispInput.value || getSavedWisp()
-          await currentConn.setTransport(
-            transportPath(method),
-            [{ wisp: wispUrl }]
-          )
+          await Promise.race([
+            currentConn.setTransport(transportPath(method), [{ wisp: wispUrl }]),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out after 10s — transport module may have failed to load or initialize (check the file is valid JS, not an HTML page)')), 10000))
+          ])
           currentTransport = method
           saveTransportChoice(method)
           setTransportUI(method)
