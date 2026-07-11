@@ -409,6 +409,30 @@
 
       let browsing = false
 
+      // ── Transport verification ──────────────────────────────────────
+      // Queries bare-mux's own SharedWorker directly via getTransport() —
+      // this reflects what's ACTUALLY handling requests right now, not
+      // what our UI/localStorage claims. Written as a real DOM attribute
+      // on <html> so it's inspectable in DevTools Elements tab, and also
+      // logged to console. Cannot be faked by our own UI state.
+      async function verifyActiveTransport() {
+        if (!currentConn) return
+        try {
+          const active = await currentConn.getTransport()
+          // active is typically the loaded module path/name from the worker,
+          // e.g. ".../transport/epoxy.mjs" or ".../transport/libcurl.mjs"
+          const label = String(active).includes('epoxy') ? 'epoxy'
+                      : String(active).includes('libcurl') ? 'libcurl'
+                      : String(active)
+          document.documentElement.setAttribute('data-active-transport', label)
+          document.documentElement.setAttribute('data-active-transport-raw', String(active))
+          console.log('[Scramjet STATIC] VERIFIED active transport (from bare-mux worker itself):', active)
+        } catch (e) {
+          document.documentElement.setAttribute('data-active-transport', 'unknown (getTransport failed)')
+          console.warn('[Scramjet STATIC] Could not verify active transport:', e)
+        }
+      }
+
       const BASE = new URL('./', document.baseURI).pathname
       const DEFAULT_WISP = 'wss://anura.pro/wisp/'
       const DEFAULT_TRANSPORT = 'libcurl'
@@ -567,6 +591,7 @@
           currentTransport = method
           saveTransportChoice(method)
           setTransportUI(method)
+          await verifyActiveTransport()
           transportSaveBtn.textContent = 'Save'
           wispToast.textContent = 'transport method set!'
           wispToast.style.background = ''
@@ -889,6 +914,7 @@
           await conn.setTransport(transportPath('libcurl'), [{ wisp: WISP }])
         }
         currentConn = conn
+        await verifyActiveTransport()
 
         history.replaceState({ home: true }, '')
         status.textContent = 'Ready'
