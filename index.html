@@ -49,6 +49,130 @@
       }
       #about-link:hover { color: rgba(255,255,255,0.55); }
 
+      /* ── Confetti canvas — foreground layer over everything ─────────── */
+      #confetti-canvas {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 200;
+        pointer-events: none;
+      }
+
+      /* ── Release notes modal ─────────────────────────────────────── */
+      #release-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.55);
+        backdrop-filter: blur(3px);
+        z-index: 150;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      }
+      #release-overlay.visible {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      #release-modal {
+        width: min(440px, 88vw);
+        max-height: 82vh;
+        overflow-y: auto;
+        background: #0d0d0d;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 22px;
+        padding: 1.8rem 1.6rem;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        transform: scale(0.92) translateY(12px);
+        transition: transform 0.32s cubic-bezier(.2,1,.3,1), opacity 0.3s ease;
+        opacity: 0;
+      }
+      #release-overlay.visible #release-modal {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+
+      #release-modal h2 {
+        font-family: 'Roboto', sans-serif;
+        font-size: 1.35rem;
+        font-weight: 500;
+        color: #fff;
+        text-align: center;
+        margin-bottom: 0.7rem;
+        letter-spacing: 0.01em;
+      }
+
+      #release-modal .intro {
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.86rem;
+        font-weight: 300;
+        color: rgba(255,255,255,0.72);
+        line-height: 1.55;
+        text-align: center;
+        margin-bottom: 1.3rem;
+      }
+
+      #release-modal .subheading {
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: #7ec8ff;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+      }
+
+      #release-notes-box {
+        background: rgba(126,200,255,0.07);
+        border: 1px solid rgba(126,200,255,0.2);
+        border-radius: 14px;
+        padding: 0.9rem 1rem;
+        margin-bottom: 1.2rem;
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.85);
+        line-height: 1.7;
+      }
+
+      #release-notes-box ul {
+        margin: 0;
+        padding-left: 1.1rem;
+      }
+      #release-notes-box li { margin-bottom: 0.45rem; }
+      #release-notes-box li:last-child { margin-bottom: 0; }
+
+      #release-modal .outro {
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.82rem;
+        font-weight: 300;
+        color: rgba(255,255,255,0.65);
+        text-align: center;
+        line-height: 1.5;
+        margin-bottom: 1.4rem;
+      }
+
+      #release-close-btn {
+        display: block;
+        margin: 0 auto;
+        background: #4a9eff;
+        color: #06121f;
+        border: none;
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.9rem;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        padding: 0.65rem 2.4rem;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background 0.15s, transform 0.08s;
+      }
+      #release-close-btn:hover { background: #6ab0ff; }
+      #release-close-btn:active { transform: scale(0.95); }
+
       /* ── WISP settings panel ─────────────────────────────────────── */
       #wisp-panel {
         width: min(600px, 88vw);
@@ -283,6 +407,34 @@
     </style>
   </head>
   <body>
+    <canvas id="confetti-canvas"></canvas>
+
+    <div id="release-overlay">
+      <div id="release-modal">
+        <h2>Welcome to Scramjet STATIC v2</h2>
+        <p class="intro">
+          Scramjet STATIC v2 has arrived — featuring bug fixes, new features,
+          and overall improvements to the SJ-STATIC engine, from navigation
+          reliability to a brand new settings panel.
+        </p>
+        <div class="subheading">Release Notes</div>
+        <div id="release-notes-box">
+          <ul>
+            <li>Rebuilt back/forward navigation to reliably return home without falling through to the browser's own history</li>
+            <li>Fixed a service worker race condition that could cause the app to hang on "Writing config…" after a reload</li>
+            <li>Added a persistent Wisp server settings panel — set and save a custom Wisp server directly from the home screen</li>
+            <li>Added live transport method switching between libcurl and epoxy, with your Wisp server carrying over automatically</li>
+            <li>Added a real loading progress bar for page navigation</li>
+            <li>Added floating reload and home controls with live network-loss detection</li>
+            <li>Added an About page and build version footer</li>
+            <li>General stability improvements across service worker registration, IndexedDB handling, and transport initialization</li>
+          </ul>
+        </div>
+        <p class="outro">Enjoy Scramjet STATIC build 2.0 — thanks for using the proxy!</p>
+        <button id="release-close-btn">Got it!</button>
+      </div>
+    </div>
+
     <div id="build-label">Build 2.0</div>
     <a id="about-link" href="https://hahahah67-pixel.github.io/scramjet-static/about.md" target="_blank" rel="noopener">about</a>
     <div id="home">
@@ -436,6 +588,123 @@
       }
 
       let browsing = false
+
+      // ── Confetti system ──────────────────────────────────────────────
+      // Canvas-based, foreground layer (z-index above the iframe).
+      // Each piece has a fake-depth "scale" that makes closer pieces
+      // bigger/faster and farther pieces smaller/slower for a 2.5D feel,
+      // plus per-piece rotation on two axes to simulate tumbling.
+      const confettiCanvas = document.getElementById('confetti-canvas')
+      const cctx = confettiCanvas.getContext('2d')
+      const CONFETTI_COLORS = ['#ff595e', '#ffca3a', '#8ac926', '#1982c4', '#6a4c93', '#ff924c', '#52d1dc', '#ff6fb5']
+
+      let confettiPieces = []
+      let confettiRunning = false
+      let confettiRAF = null
+      let confettiStopTimer = null
+
+      function resizeConfettiCanvas() {
+        confettiCanvas.width = window.innerWidth
+        confettiCanvas.height = window.innerHeight
+      }
+      window.addEventListener('resize', resizeConfettiCanvas)
+      resizeConfettiCanvas()
+
+      function makeConfettiPiece() {
+        const depth = 0.4 + Math.random() * 0.9 // fake z-depth: smaller = farther
+        return {
+          x: Math.random() * confettiCanvas.width,
+          y: -20 - Math.random() * confettiCanvas.height * 0.5,
+          w: (6 + Math.random() * 6) * depth,
+          h: (10 + Math.random() * 8) * depth,
+          depth,
+          speedY: (1.4 + Math.random() * 2.2) * depth,
+          driftX: (Math.random() - 0.5) * 1.6,
+          rotX: Math.random() * Math.PI * 2,
+          rotXSpeed: (Math.random() - 0.5) * 0.12,
+          rotZ: Math.random() * Math.PI * 2,
+          rotZSpeed: (Math.random() - 0.5) * 0.1,
+          color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+          sway: Math.random() * Math.PI * 2,
+          swaySpeed: 0.02 + Math.random() * 0.02,
+        }
+      }
+
+      function seedConfetti(count) {
+        for (let i = 0; i < count; i++) confettiPieces.push(makeConfettiPiece())
+      }
+
+      function drawConfettiPiece(p) {
+        cctx.save()
+        cctx.translate(p.x, p.y)
+        // rotX simulated via horizontal squash (fake 3D tumble)
+        const squash = Math.abs(Math.cos(p.rotX))
+        cctx.rotate(p.rotZ)
+        cctx.scale(Math.max(squash, 0.12), 1)
+        cctx.fillStyle = p.color
+        cctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h)
+        // subtle shading edge for a bit of dimensionality
+        cctx.fillStyle = 'rgba(0,0,0,0.15)'
+        cctx.fillRect(-p.w / 2, -p.h / 2, p.w * 0.25, p.h)
+        cctx.restore()
+      }
+
+      function confettiTick() {
+        cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height)
+
+        for (const p of confettiPieces) {
+          p.sway += p.swaySpeed
+          p.y += p.speedY
+          p.x += p.driftX + Math.sin(p.sway) * 0.6
+          p.rotX += p.rotXSpeed
+          p.rotZ += p.rotZSpeed
+
+          if (p.y > confettiCanvas.height + 30) {
+            // Recycle back to top — continuous fall while running
+            p.y = -20 - Math.random() * 60
+            p.x = Math.random() * confettiCanvas.width
+          }
+
+          drawConfettiPiece(p)
+        }
+
+        if (confettiRunning) {
+          confettiRAF = requestAnimationFrame(confettiTick)
+        }
+      }
+
+      function startConfetti() {
+        if (confettiRunning) return
+        confettiRunning = true
+        confettiPieces = []
+        seedConfetti(140)
+        confettiCanvas.style.display = 'block'
+        confettiTick()
+      }
+
+      function stopConfetti() {
+        confettiRunning = false
+        clearTimeout(confettiStopTimer)
+        if (confettiRAF) cancelAnimationFrame(confettiRAF)
+        // Let existing pieces fall off screen naturally rather than
+        // vanishing abruptly, then clear the canvas
+        setTimeout(() => {
+          cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height)
+          confettiCanvas.style.display = 'none'
+        }, 600)
+      }
+
+      // ── Release notes modal ──────────────────────────────────────────
+      const releaseOverlay = document.getElementById('release-overlay')
+      const releaseCloseBtn = document.getElementById('release-close-btn')
+
+      function showReleaseModal() {
+        releaseOverlay.classList.add('visible')
+      }
+      function hideReleaseModal() {
+        releaseOverlay.classList.remove('visible')
+      }
+      releaseCloseBtn.addEventListener('click', hideReleaseModal)
 
       // ── Transport verification ──────────────────────────────────────
       // Queries bare-mux's own SharedWorker directly via getTransport() —
@@ -693,8 +962,22 @@
 
       // Fire the loading bar to completion whenever the iframe finishes
       // loading — this covers both initial navigation and in-site link clicks
+      let confettiStoppedForSession = false
       frame.addEventListener('load', () => {
-        if (browsing) finishLoadBar()
+        if (browsing) {
+          finishLoadBar()
+          // Once a proxied page has successfully loaded, give it 5 seconds
+          // of "working" confirmation, then let confetti stop permanently
+          // for this session (homepage confetti only, never returns once
+          // you've successfully browsed somewhere).
+          if (!confettiStoppedForSession && confettiRunning) {
+            clearTimeout(confettiStopTimer)
+            confettiStopTimer = setTimeout(() => {
+              confettiStoppedForSession = true
+              stopConfetti()
+            }, 5000)
+          }
+        }
       })
 
       // The manual home button — direct call, no history/popstate involved
@@ -946,6 +1229,11 @@
 
         history.replaceState({ home: true }, '')
         status.textContent = 'Ready'
+
+        // Start homepage confetti immediately, show the v2 release modal
+        // 2 seconds after the page is confirmed ready
+        startConfetti()
+        setTimeout(showReleaseModal, 2000)
 
         function navigate(raw) {
           const url = toUrl(raw)
