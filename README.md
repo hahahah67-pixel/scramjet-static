@@ -1,6 +1,6 @@
 # SCRAMJET - STATIC
 
-### Build 1.5.1 (First Officialy Documentaied Release)
+### Build 2.0 (NEWEST PROGRAM VERSION/BUILD LANCHED JULY 12 '26 )
 **Created & Maintained by:** hahahah67-pixel
   ORIGINAL scramjet-static public program creation date:
 June 11, 2026 (6/11/26)
@@ -12,7 +12,7 @@ align="center"><img src="https://raw.githubusercontent.com/hahahah67-pixel/scram
 
 This is a static build of the **Scramjet** internet proxy, originally developed by **MercuryWorkshop**. This deployment is powered by a public WISP libcurl URL provided by **aura.pro**. 
 
-This static variant is built on Scramjet version 1.10 and utilizes the core engine components directly from the official Scramjet Example-App, allowing it to remain entirely static.
+This static variant is built on Scramjet version 1.10 and utilizes the core engine components directly from the official Scramjet Example-App, allowing it to remain entirely static. This is meant to be a static SJ engine meant for public deployment and use, if you like this project please use it yourself in public deployment.
 
 ---
 
@@ -60,8 +60,32 @@ repo File structure
 
 ---
 
-## ⭐ Support
+## VERSION 2.0 UPGRADES! 🏆 we are proudm to release version 2 of this project, furthering development of this custom scarmjet proxy engine for static usage, we hope people build off, and deploy this in production. It is the best static interpertacion of scramjet so far* build from the ground up! 🏆🏆🏆🏆🏆🏆🏆🏆🏆
 
-Thank you for supporting this project! If you decide to fork it, please consider leaving a **Star (⭐)**!
+## IMPROVMENTS INCLUDE:
+- Rebuilt back/forward navigation to reliably return home without falling through to the browser's own history
+- Fixed a service worker race condition that could cause the app to hang on "Writing config…" after a reload
+- Added a persistent Wisp server settings panel — set and save a custom Wisp server directly from the home screen
+- Added live transport method switching between libcurl and epoxy, with your Wisp server carrying over automatically
+- Added a real loading progress bar for page navigation
+- Added floating reload and home controls with live network-loss detection
+- Added an About page and build version footer
+- General stability improvements across service worker registration, IndexedDB handling, and transport initialization
 
-TIP: the default scramjet-static program uses the public WISP aura.pro server link, it is highly suggested to experiment with other WISP backend URL's (including your own) to maximiaze security, speed, and other config to your liking, the default aura.pro URL is used in the public build of scramjet-static and replacment is un-needed, although not a bad idea for public deployment..
+  ---
+  ## HERE ARE SOME IMAGES OF SJ-STATIC V.2 SHOW CASING A VERSION PREVIEW:
+
+
+align="center"><img src="https://raw.githubusercontent.com/hahahah67-pixel/scramjet-static-demo-build/main/transport/scramjett.png" height="200"></p>
+
+align="center"><img src="https://raw.githubusercontent.com/hahahah67-pixel/scramjet-static-demo-build/main/transport/scramjett.png" height="200"></p>
+
+align="center"><img src="https://raw.githubusercontent.com/hahahah67-pixel/scramjet-static-demo-build/main/transport/scramjett.png" height="200"></p>
+
+align="center"><img src="https://raw.githubusercontent.com/hahahah67-pixel/scramjet-static-demo-build/main/transport/scramjett.png" height="200"></p>
+
+---
+all open-source services are used under accaptable and law-binding copyright and lisences, Scramjet-static is lisenced under the APGL 3.0 public lisence, for lisence info vist /LISENCE on this web domain.
+for more information, please vist dmca.com
+  
+
