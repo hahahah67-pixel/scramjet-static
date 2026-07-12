@@ -60,17 +60,18 @@ repo File structure
 
 ---
 
-## VERSION 2.0 UPGRADES! 🏆 we are proudm to release version 2 of this project, furthering development of this custom scarmjet proxy engine for static usage, we hope people build off, and deploy this in production. It is the best static interpertacion of scramjet so far* build from the ground up! 🏆🏆🏆🏆🏆🏆🏆🏆🏆
+## VERSION 2.0 UPGRADES! 🏆 we are proud to release version 2 of this project, furthering development of this custom scarmjet proxy engine for static usage, we hope people build off, and deploy this in production. It is the best static interpertacion of scramjet so far* built from the ground up! 🏆🏆🏆🏆🏆🏆🏆🏆🏆
 
 ## IMPROVMENTS INCLUDE:
 - Rebuilt back/forward navigation to reliably return home without falling through to the browser's own history
 - Fixed a service worker race condition that could cause the app to hang on "Writing config…" after a reload
 - Added a persistent Wisp server settings panel — set and save a custom Wisp server directly from the home screen
 - Added live transport method switching between libcurl and epoxy, with your Wisp server carrying over automatically
-- Added a real loading progress bar for page navigation
+- Added a real blue top loading progress bar for page navigation
 - Added floating reload and home controls with live network-loss detection
 - Added an About page and build version footer
 - General stability improvements across service worker registration, IndexedDB handling, and transport initialization
+- Full firefox support is now added, expoy transport enables compatibility with Firefox.
 
   ---
   ## HERE ARE SOME IMAGES OF SJ-STATIC V.2 SHOW CASING A VERSION PREVIEW:
