@@ -88,7 +88,7 @@ align="center"><img src="https://raw.githubusercontent.com/hahahah67-pixel/scram
 align="center"><img src="https://raw.githubusercontent.com/hahahah67-pixel/scramjet-static-demo-build/main/transport/preview 5.png" height="200"></p>
 
 ---
-all open-source services are used under accaptable and law-binding copyright and lisences, Scramjet-static is lisenced under the APGL 3.0 public lisence, for lisence info vist /LISENCE on this web domain.
+all open-source services are used under accaptable and law-binding copyright and lisences, Scramjet-static is lisenced under the APGL 3.0 public lisence, for lisence info vist /LICENSE on this web domain.
 for more information, please vist dmca.com
   
 
