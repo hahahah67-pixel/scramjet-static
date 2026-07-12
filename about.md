@@ -1,6 +1,5 @@
 # About Scramjet STATIC
 
-![Scramjet STATIC](https://raw.githubusercontent.com/hahahah67-pixel/scramjet-static/transport/scramjett.png)
 
 Scramjet STATIC is a fully static, browser-based web proxy built on top of [Scramjet](https://github.com/MercuryWorkshop/scramjet) — MercuryWorkshop's interception-based proxy engine. There is no backend server required to run the proxy itself. Everything runs client-side: a service worker intercepts and rewrites requests, and traffic is tunneled out through a [Wisp](https://github.com/MercuryWorkshop/wisp-protocol) server using your choice of transport.
 
