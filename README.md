@@ -27,7 +27,7 @@ This static variant is built on Scramjet version 1.10 and utilizes the core engi
 
 repo File structure
     
-    -└── scramjet-static
+    -└── scramjet-static build 2.0
     └── .github
         ├── ISSUE_TEMPLATE
         │   ├── bug_report.md
