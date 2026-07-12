@@ -41,8 +41,8 @@ Because this is entirely static, deploying your own instance is as simple as for
 
 ## Credits
 
-Built on [Scramjet](https://github.com/MercuryWorkshop/scramjet), [bare-mux](https://github.com/MercuryWorkshop/bare-mux), [libcurl-transport](https://github.com/MercuryWorkshop/libcurl-transport), and [epoxy-transport](https://github.com/MercuryWorkshop/epoxy-transport), all developed by [MercuryWorkshop](https://github.com/MercuryWorkshop).
+Built on Scramjet (https://github.com/MercuryWorkshop/scramjet), bare-mux (https://github.com/MercuryWorkshop/bare-mux), libcurl-transport (https://github.com/MercuryWorkshop/libcurl-transport), and epoxy-transport (https://github.com/MercuryWorkshop/epoxy-transport), all developed by MercuryWorkshop (https://github.com/MercuryWorkshop).
 
 this content is up to date as of july 10 2026 DO NOT re-distibute or trust this information if out-dated.
-all open-source services are used under accaptable and law-binding copyright and lisences, Scramjet-static is lisenced under the APGL 3.0 public lisence, for lisence info vist /LISENCE on this web domain.
+all open-source services are used under accaptable and law-binding copyright and lisences, Scramjet-static is lisenced under the APGL 3.0 public lisence, for lisence info vist /LICENSE on this web domain.
 for more information, please vist dmca.com
