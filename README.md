@@ -65,11 +65,16 @@ repo File structure
 ## IMPROVMENTS INCLUDE:
 - Rebuilt back/forward navigation to reliably return home without falling through to the browser's own history
 - Fixed a service worker race condition that could cause the app to hang on "Writing config…" after a reload
-- Added a persistent Wisp server settings panel — set and save a custom Wisp server directly from the home screen
-- Added live transport method switching between libcurl and epoxy, with your Wisp server carrying over automatically
-- Added a real blue top loading progress bar for page navigation
-- Added floating reload and home controls with live network-loss detection
-- Added an About page and build version footer
+- Added a persistent WISP server settings panel — set and save a custom WISP server directly from the home screen, no redeployment needed
+- Added live transport method switching between libcurl and epoxy — swap transports without reloading the page, your WISP server carries over automatically
+- Added real, verifiable transport confirmation — open DevTools and inspect the <html> tag's data-active-transport attribute to see which transport is actually handling requests, read straight from bare-mux's own internal state, not just what the UI claims
+- Added a real animated loading progress bar for page navigation
+- Added floating reload and home controls, including live network-loss detection during reload with a clear "no internet" message
+- Added an About page (about.md) linked from the home screen, plus a build version label
+- Added fork-friendly configuration — wisp.txt and transport.txt at the repo root let anyone who forks the project set their own default WISP server or transport method just by editing a text file, no code changes required
+- Added a one-time "Welcome to Scramjet STATIC v2" release popup with full changelog, shown on first visit to this version
+- Added confetti celebration animation on the home screen for the v2 launch
+- Fixed home screen footer text (build label and About link) remaining visible through the proxy iframe instead of being hidden while browsing
 - General stability improvements across service worker registration, IndexedDB handling, and transport initialization
 - Full firefox support is now added, expoy transport enables compatibility with Firefox.
 
