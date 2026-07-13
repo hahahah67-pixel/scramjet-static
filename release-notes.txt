@@ -1,3 +1,9 @@
+Scramjet static Offical Release notes.
+this file will be updated each new SJ-static release and will show release notes for the most recent build at the time NOT past releases.
+The following release notes are build 2.0 v.2 release notes from July 12 2026, if this is in a fork, unchanged, the info is likely invalid prob.
+
+Release notes:
+
 - Rebuilt back/forward navigation to reliably return home without falling through to the browser's own history
 - Fixed a service worker race condition that could cause the app to hang on "Writing config…" after a reload
 - Added a persistent WISP server settings panel — set and save a custom WISP server directly from the home screen, no redeployment needed
