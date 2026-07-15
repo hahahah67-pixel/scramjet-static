@@ -1,0 +1,16 @@
+{
+  "name": "scramjet-static",
+  "version": "2.0.0",
+  "description": "learn, grow, math reading study K-12",
+  "main": "index.html",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hahahah67-pixel/scramjet-static.git"
+  },
+  "keywords": math, reading, .edu, learn, school, work, study, lessons, grades,
+  "author": hahahah67-pixel,
+  "license": "APGL 3.0"
+}
