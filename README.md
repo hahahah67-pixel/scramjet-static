@@ -25,34 +25,51 @@ This static variant is built on Scramjet version 1.10 and utilizes the core engi
 
 ## File Structure
 
-repo File structure
-    
-    -└── scramjet-static build 2.0
-    └── .github
-        ├── ISSUE_TEMPLATE
-        │   ├── bug_report.md
-        │   ├── config.yml
+```
+scramjet-static/
+│
+├── index.html
+├── sw.js
+├── about.md
+├── README.md
+├── LICENSE
+├── .nojekyll
+│
+├── wisp.txt
+├── transport.txt
+├── release-notes.txt
+│
+├── scramjet-engine/
+│   ├── scramjet.js
+│   ├── scramjet-all.js
+│   ├── scramjet-sync.js
+│   └── scramjet.wasm
+│
+├── bare-mux/
+│   ├── bare-mux.js
+│   └── bare-mux-worker.js
+│
+├── transport/
+│   ├── libcurl.mjs
+│   ├── epoxy.mjs
+│   ├── scramjett.png
+│   ├── preview 1.png
+│   ├── preview 2.png
+│   ├── preview 3.png
+│   ├── preview 4.png
+│   └── preview 5.png
+│
+└── .github/
+    ├── ISSUE_TEMPLATE/
+    │   ├── bug_report.md
+    │   └── config.yml
+    │
+    └── workflows/
+        ├── docker-image.yml
+        └── eslint.yml
+```
 
-        ├── workflows
-        │   └── docker-image.yml
-        │   └── eslint.yml
-    └── bare-mux
-        ├── bare-mux-worker.js
-        ├── bare-mux.js
-    └── scramjet-engine
-        ├── scramjet-all.js
-        ├── scramjet-sync.js
-        ├── scramjet.js
-        ├── scramjet.wasm
-    └── transport
-        ├── libcurl.mjs
-        ├── scramjett.png
-    └── index.html
-    └── LICENSE
-    └── README.md
-    └── sw.js
-    
-    
+
 ## 📄 License & Legal
 
 * **License:** This project and the open-source technologies it utilizes are licensed under the **AGPL 3.0 Public License**.
@@ -95,5 +112,3 @@ align="center"><img src="https://raw.githubusercontent.com/hahahah67-pixel/scram
 ---
 all open-source services are used under accaptable and law-binding copyright and lisences, Scramjet-static is lisenced under the APGL 3.0 public lisence, for lisence info vist /LICENSE on this web domain.
 for more information, please vist dmca.com
-  
-
